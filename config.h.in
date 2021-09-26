@@ -1,0 +1,6 @@
+#pragma once
+
+#cmakedefine OPENCL_AMD
+#cmakedefine OPENCL_INTEL
+#cmakedefine OPENCL_NVIDIA
+
