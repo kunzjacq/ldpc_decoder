@@ -1,14 +1,14 @@
 # OpenCL LDPC decoder
 
-A Low-Density Parity Code decoder implemented in C++14 and OpenCL, tuned for large codes close to the Shannon bound. 
+A Low-Density Parity-Check error-correcting code decoder implemented in C++14 and OpenCL, tuned for large codes close to the Shannon bound. 
 Codes are read in the `alist` text format; no code generator is included.
 Typical decoding speed on semi-recent discrete graphics cards is a between 10 and 100Mb/s, for codes with codewords of size 10<sup>6</sup>. 
 
-Decoding is performed with the flood soft decoding algorithm. This is an iterative algorithm which requires a variable number of rounds. There can be large variations of the number of rounds required to decode a frame, even at a fixed noise level. Hence a parallel implementation of flood decoding with a fixed number of rounds on a GPU is inefficient: it needs a large number of rounds to ensure that all frames are properly error-corrected, but must frames are error-free after a much smaller number of rounds. 
+Decoding is performed with the flood soft-decoding algorithm. This is an iterative algorithm which requires a variable number of rounds to complete. There can be large variations of the number of rounds required to decode a frame, even at a fixed noise level. Hence a parallel implementation of flood decoding with a fixed number of rounds on a GPU for all frames is inefficient: it needs a large number of rounds to ensure that all frames are properly error-corrected, but most frames are error-free after a much smaller number of rounds and waste computing resources. 
 
-To avoid this inefficiency, the implemented decoder is able to replace on the fly frames that have finished decoding with new frames to decode. To identify finished frames, once every *k* rounds of the flood decoding algorithm, all parity equations of the frames being decoding are computed. Finished frames are the one for which all parity equations are satisfied. This computation is done on the GPU.
+To avoid this inefficiency, the implemented decoder is able to replace on the fly frames that have finished decoding with new frames to decode. To identify finished frames, once every *k* rounds of the flood decoding algorithm, all parity equations of the frames being decoding are computed. Finished frames are the ones whose parity equations are all satisfied. This computation is done on the GPU.
 
-The decoder is not restricted to codewords; instead, it takes the target values of the parity equations on the data to decode as input. This simplifies the testing of the decoder, as random data does not need to be transformed into codewords. The decoder could easily be transformed into a codeword-decoding algorithm by setting all parity bits to 0.
+The decoder is not restricted to codewords; instead, it takes as input the target values of the parity equations on the data to decode. This simplifies the testing of the decoder, as random data does not need to be transformed into codewords. The decoder could easily be transformed into a codeword-decoding algorithm by setting all parity bits to 0.
 
 ### Noise models
 
@@ -30,7 +30,7 @@ For multi-configuration generators, e.g. when targeting Visual Studio under Wind
 
 with `CONFIG` equal to `Debug` or `Release`. 
 
-There is only one target, `ldpc_decoder_gpu`, which implements a testing program for the decoder, that generates data to decode, and measures the result of the decoding process and exection times. Some usage example are given below. 
+There is only one target, `ldpc_decoder_gpu`, which implements a testing program for the decoder, that generates data to decode, and measures the result of the decoding process and exection times. A usage example is given below. 
 
 Visual Studio, a linux gcc or clang, or MinGW gcc under Windows can be used to build the project, with some caveats. 
 
@@ -39,13 +39,13 @@ The project is dependent on finding a working implementation of OpenCL. CMake is
 ### AVX2 Issues with MinGW and Visual studio
 
 The source code uses AVX2 for some auxiliary functions. Unfortunately, this causes problems with the compilers listed below.
-  * MinGW gcc under Windows, in any version, is not able to properly align 256-bit AVX2 variables on the stack (to a 32-byte alignment); the cases that would make the program segfault have been avoided in the implementation with some *apparent* success, but some problems may very well remain until non-AVX2 versions of the problematic functions are implemented. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54412. 
+  * MinGW gcc under Windows, in any version, is not able to properly align 256-bit AVX2 variables on the stack (to a 32-byte alignment); the cases that would make the program segfault have been avoided in the implementation seemingly with some success, but problems may very well remain until non-AVX2 versions of the problematic functions are implemented. See https://gcc.gnu.org/bugzilla/show_bug.cgi?id=54412. 
 
   * Visual Studio before version 16.3 also miscompiles some AVX2 code. See https://developercommunity.visualstudio.com/t/avx2-optimization-bug-with-cl-versions-1916270301/549774.
 
-## Usage examples
+## Usage example
 
-The program must have its OpenCL kernels in a subdirectory `src/opencl/` relative to its execution path. It should therefore be started from the root of the source directory.
+The program must have its OpenCL kernels in a subdirectory `src/opencl/` relative to its execution path. It should therefore be started from the root of the repository.
 
 `ldpc_decoder_gpu -f code_awgn_rate_0.5_thr_0.95.alist -c  1 -n 0.94 -p 8 -m 2 -e 15 -i 120`
 
@@ -55,7 +55,7 @@ The program must have its OpenCL kernels in a subdirectory `src/opencl/` relativ
   * `-p 4`: ask to decode n = 2<sup>8</sup> = 256 frames in parallel on the GPU. This number may be lowered by the decoder as it is limited by the available memory on the GPU.
   * `-m 2`: use a loading factor of 2, i.e. generate 2×n = 512 frames. Frames are processed in order starting with the first n ones and new frames are sent to the GPU when previous frames have been error-corrected. Higher loading factors ensure the GPU is kept busy during a larger fraction of the test and results in better overall throughput.
   * `-e 15`: consider frames with less than 15 errors as corrected when computing final Frame Error Rate statistics. 
-  * `-i 120`: run at most 120 iterations of the decoding algorithm per frame. Frames that are not fully error-corrected after this amount of iterations will be retired from the GPU anyway.
+  * `-i 120`: run at most 120 iterations of the decoding algorithm per frame. Frames that are not fully error-corrected after this amount of iterations will be retired from the GPU anyway. Without this option, the default value for this parameter is 100.
 
 The full list of options can be obtained with `ldpc_decoder_gpu.exe -h`.
 
