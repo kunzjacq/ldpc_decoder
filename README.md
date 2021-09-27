@@ -49,10 +49,10 @@ The program must have its OpenCL kernels in a subdirectory `src/opencl/` relativ
 
 `ldpc_decoder_gpu -f code_awgn_rate_0.5_thr_0.95.alist -c  1 -n 0.94 -p 8 -m 2 -e 15 -i 120`
 
-  * `-f code.alist`: load code file `code.alist`
+  * `-f <file>`: load code file `<file>`
   * `-c  1`: test it with channel type 1 (AWGN)
-  * `-n 0.94`: use noise level 0.94. For AWGN channels, the noise level is the stdev of the gaussian noise.
-  * `-p 4`: ask to decode n = 2<sup>8</sup> = 256 frames in parallel on the GPU. This number may be lowered by the decoder as it is limited by the available memory on the GPU.
+  * `-n 0.94`: use noise level 0.94. For AWGN channels, the noise level is the std. dev. of the gaussian noise.
+  * `-p 8`: ask to decode n = 2<sup>8</sup> = 256 frames in parallel on the GPU. This number may be lowered by the decoder as it is limited by the available memory on the GPU.
   * `-m 2`: use a loading factor of 2, i.e. generate 2×n = 512 frames. Frames are processed in order starting with the first n ones and new frames are sent to the GPU when previous frames have been error-corrected. Higher loading factors ensure the GPU is kept busy during a larger fraction of the test and results in better overall throughput.
   * `-e 15`: consider frames with less than 15 errors as corrected when computing final Frame Error Rate statistics. 
   * `-i 120`: run at most 120 iterations of the decoding algorithm per frame. Frames that are not fully error-corrected after this amount of iterations will be retired from the GPU anyway. Without this option, the default value for this parameter is 100.
