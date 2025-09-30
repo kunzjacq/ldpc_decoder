@@ -1,21 +1,16 @@
 #pragma once
 
 #include "channel.h"
-#include "ldpc_code.h"
+#include "cuda_manager.h"
 #include "ldpc_decoder_gpu_common.h"
-#include "opencl_manager.h"
 #include "test_report.h"
 
 #include <cmath>
 #include <cfloat>
-#include <exception>
-#include <iostream>
-#include <algorithm>
 
-class ldpc_decoder_gpu
+class ldpc_decoder_gpu_cuda
 {
 protected:
-  static const unsigned int log2_simd_parallel_factor;
   static const char* m_program_name;
 
   transfer_llr_t* m_llrs;
@@ -23,7 +18,7 @@ protected:
   char* m_parity_violations;
   transfer_llr_t* m_message_buffer;
   uint32_t m_max_table_index;
-  float m_noise_factor;
+  transfer_llr_t m_noise_factor;
   const int64_t m_n_edges; // a 64-bit integer is used to avoid overflow issues when multiplying,
   // without explicit cast to a larger type. However the value is assumed to fit in an unsigned
   // 32-bit integer.
@@ -43,30 +38,42 @@ protected:
 
   // GPU-related variables
   //  global object for GPU management
-  cl_manager m_device_manager;
-  //  kernels
-  cl_kernel m_convert_llr_bsc_k, m_convert_llr_biawgn_k, m_flood_backward_k,
-  m_flood_forward_k, m_flood_forward_w_final_bits_k, m_deinterlace_output_k,
-  m_check_parity_k, m_refill_k, m_refill_vec_k, m_permute_k;
+  cuda_manager m_device_manager;
+
   //  device buffers
 
   // memory-mapped i/o device buffers (pinned memory)
-  cl_mem m_in_mapped_dev_buf, m_out_mapped_dev_buf, m_out_packed_mapped_dev_buf, m_parities_mapped_dev_buf;
-  // other device buffers
-  cl_mem   m_syndrome_dev_buf, m_new_syndrome_dev_buf, m_message_dev_buf,
-    m_initial_llrs_dev_buf, m_new_initial_llrs_dev_buf,
-    m_final_bits_dev_buf, m_final_bits_packed_dev_buf, m_vec_places_dev_buf,
-    m_parities_violated_dev_buf,
-    m_out_bit_to_edge_dev_buf, m_out_to_in_edge_dev_buf, m_in_to_out_edge_dev_buf,
-    m_in_bit_to_edge_dev_buf, m_out_edge_to_in_bit_dev_buf,
-    m_swap_o_dev_buf, m_swap_d_dev_buf;
+
+  uint32_t* m_syndrome_dev_buf;
+  uint32_t* m_new_syndrome_dev_buf;
+  uint32_t* m_final_bits_packed_dev_buf;
+  uint32_t* m_vec_places_dev_buf;
+  uint32_t* m_swap_o_dev_buf;
+  uint32_t* m_swap_d_dev_buf;
+
+
+  llr_t* m_message_dev_buf;
+  llr_t* m_initial_llrs_dev_buf;
+  transfer_llr_t* m_new_initial_llrs_dev_buf;
+  char* m_final_bits_dev_buf;
+  char* m_parities_violated_dev_buf;
+
+  uint32_t* m_out_bit_to_edge_dev_buf;
+  uint32_t* m_out_to_in_edge_dev_buf;
+  uint32_t* m_in_to_out_edge_dev_buf;
+  uint32_t* m_in_bit_to_edge_dev_buf;
+  uint32_t* m_out_edge_to_in_bit_dev_buf;
+
+  //for pinned memory
+  //cl_mem m_in_mapped_dev_buf, m_out_mapped_dev_buf, m_out_packed_mapped_dev_buf, m_parities_mapped_dev_buf;
 
   int32_t m_log2_local_threads;
   int32_t m_log2_global_threads;
-  int32_t m_log2_threads_per_simd_vector;
+  int32_t m_log2_threads_per_vector;
 
   size_t m_local_threads;
   size_t m_global_threads;
+  size_t m_tiles;
 
   uint32_t m_log2_parallel_factor;
   uint32_t m_parallel_factor;
@@ -74,15 +81,15 @@ protected:
   const noisy_channel &m_channel;
 
 public:
-  ldpc_decoder_gpu(
+  ldpc_decoder_gpu_cuda(
       const ldpc_code& p_code,
       const noisy_channel &p_channel,
       const ldpc_decoder_gpu_static_parameters &p_params);
-  ~ldpc_decoder_gpu();
+  ~ldpc_decoder_gpu_cuda();
 
-  ldpc_decoder_gpu() = delete;
-  ldpc_decoder_gpu(const ldpc_decoder_gpu&) = delete;
-  ldpc_decoder_gpu & operator=(const ldpc_decoder_gpu&) = delete;
+  ldpc_decoder_gpu_cuda() = delete;
+  ldpc_decoder_gpu_cuda(const ldpc_decoder_gpu_cuda&) = delete;
+  ldpc_decoder_gpu_cuda & operator=(const ldpc_decoder_gpu_cuda&) = delete;
 
   /**
    * @brief decode
@@ -101,7 +108,7 @@ public:
   void decode(
       const ldpc_decoder_gpu_dynamic_parameters& p_dyn_params,
       uint32_t p_num_vectors_to_process,
-      void   *p_input,
+      void *p_input,
       const uint32_t *p_syndromes,
       uint32_t *p_results,
       test_report &report,
@@ -134,8 +141,7 @@ private:
   void transfer_vectors(
       uint32_t p_num_vectors,
       transfer_llr_t *p_llrs,
-      const uint32_t *p_syndromes,
-      float p_threshold);
+      const uint32_t *p_syndromes);
 };
 
 

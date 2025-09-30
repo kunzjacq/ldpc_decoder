@@ -28,7 +28,7 @@ int chacha_stream(
 static constexpr size_t buffer_size = 1536;
 
 prng_chacha::prng_chacha(uint64_t p_seed):
-  buf((uint32_t*) aligned_alloc(32, buffer_size)),
+  buf((uint32_t*) util::aligned_alloc(32, buffer_size)),
   buf_c((unsigned char*)buf),
   key_c((unsigned char*)key),
   iv_c((unsigned char*)&iv)
@@ -50,7 +50,7 @@ void prng_chacha::reset_seed_internal(uint64_t p_seed)
 
 prng_chacha::~prng_chacha()
 {
-  aligned_free(buf);
+  util::aligned_free(buf);
 }
 
 uint32_t prng_chacha::random_int()

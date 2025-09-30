@@ -5,6 +5,7 @@
 #ifdef _WIN32
 #include <malloc.h>
 
+namespace util{
 void* aligned_alloc(size_t align, size_t sz)
 {
   return _aligned_malloc(sz, align);
@@ -14,11 +15,20 @@ void aligned_free(void* ptr)
 {
   _aligned_free(ptr);
 }
+}
+
 #else
-#include <stdlib.h>
+#include <cstdlib>
+namespace util{
+void* aligned_alloc(size_t align, size_t sz)
+{
+  return ::aligned_alloc(align, sz);
+}
+
 void aligned_free(void* ptr)
 {
   std::free(ptr);
+}
 }
 #endif
 

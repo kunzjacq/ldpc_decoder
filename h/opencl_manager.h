@@ -65,8 +65,7 @@ class cl_manager
     void create_host_pinned_buffer(enum _bufType p_dev_buf_type, size_t p_buffer_size,
       cl_mem& po_buf, T*& po_mem_area);
     template<class T>
-    void create_device_buffer(enum _bufType p_dev_buf_type, size_t p_buffer_size, cl_mem& po_buf,
-      T* p_buf);
+    cl_mem create_device_buffer(enum _bufType p_dev_buf_type, size_t p_buffer_size);
     template<class T>
     void create_device_buffer_from_host_data(enum _bufType p_dev_buf_type, size_t p_buffer_size,
       cl_mem& po_buf, T* p_buf_addr);
@@ -79,7 +78,7 @@ class cl_manager
     template<class T>
     void enqueue_read(
         cl_mem& p_buf, cl_bool p_blocking_read, size_t p_offset, size_t p_copy_size,
-        const T* p_ptr, cl_uint p_num_previous_event, const cl_event* p_ptr_previous_event,
+        T* p_ptr, cl_uint p_num_previous_event, const cl_event* p_ptr_previous_event,
         cl_event* p_ptr_next_event);
     template<class T>
     void enqueue_clear(
@@ -190,12 +189,12 @@ void cl_manager::enqueue_write(
 template<class T>
 void cl_manager::enqueue_read(
     cl_mem& p_buf, cl_bool p_blocking_read, size_t p_offset, size_t p_copy_size,
-    const T* p_ptr, cl_uint p_num_previous_event, const cl_event* p_ptr_previous_event,
+    T* p_ptr, cl_uint p_num_previous_event, const cl_event* p_ptr_previous_event,
     cl_event* p_ptr_next_event)
 {
   cl_int status = clEnqueueReadBuffer(
-        m_command_queue, p_buf, p_blocking_read, sizeof(T) * p_offset, sizeof(T) * p_copy_size,
-        (void*) p_ptr, p_num_previous_event, p_ptr_previous_event, p_ptr_next_event);
+    m_command_queue, p_buf, p_blocking_read, sizeof(T) * p_offset, sizeof(T) * p_copy_size,
+                          static_cast<void *>(p_ptr), p_num_previous_event, p_ptr_previous_event, p_ptr_next_event);
   cl_manager::check_output(status, "clEnqueueReadBuffer failed.");
 }
 
@@ -212,14 +211,11 @@ void cl_manager::enqueue_clear(
 
   cl_manager::check_output(status, "clEnqueueFillBuffer failed.");
 }
-template <class T>
-void cl_manager::create_device_buffer(enum _bufType p_devBufType, size_t p_buffer_size,
-    cl_mem& po_buf, T* )
-{
+
+template <class T> cl_mem cl_manager::create_device_buffer(enum _bufType p_devBufType, size_t p_buffer_size) {
   cl_int status = 0;
   cl_mem_flags flags = 0;
-  switch(p_devBufType)
-  {
+  switch (p_devBufType) {
   case rw:
     flags = CL_MEM_READ_WRITE;
     break;
@@ -229,6 +225,7 @@ void cl_manager::create_device_buffer(enum _bufType p_devBufType, size_t p_buffe
   case w:
     flags = CL_MEM_WRITE_ONLY;
   }
-  po_buf = clCreateBuffer(m_context, flags, sizeof(T) * p_buffer_size, nullptr, &status);
+  cl_mem buf = clCreateBuffer(m_context, flags, sizeof(T) * p_buffer_size, nullptr, &status);
   check_output(status, "clCreateBuffer failed.");
+  return buf;
 }

@@ -9,14 +9,14 @@ class rng
 private:
   uint32_t bool_num_bits;
   uint32_t g_val_exists;
-  llr_t g_val_next;
+  float g_val_next;
 
 public:
 
   rng() :
     bool_num_bits(0),
     g_val_exists(false),
-    g_val_next(0.)
+    g_val_next(0)
   {
   }
 
@@ -35,37 +35,37 @@ public:
     g_val_exists = false;
   }
 
-  llr_t unit()
+  float unit()
   {
-    static const llr_t normalizer = pow(2.f, -32.f);
-    return (static_cast<llr_t>(random_int()) + .5f) * normalizer;
+    static const float normalizer = pow(2.f, -32.f);
+    return (static_cast<float>(random_int()) + .5f) * normalizer;
   }
 
-  bool biased_bool(llr_t p_proba)
+  bool biased_bool(float p_proba)
   {
     return unit() < p_proba;
   }
 
-  llr_t gaussian()
+  transfer_llr_t gaussian()
   {
-    llr_t result = 0;
+    float result = 0;
     if (g_val_exists) result = g_val_next;
     else
     {
-      llr_t x, y, sqnorm;
+      float x, y, sqnorm;
       do
       {
-        x = 2 * unit() - 1;
-        y = 2 * unit() - 1;
+        x = 2.f * unit() - 1.f;
+        y = 2.f * unit() - 1.f;
         sqnorm = x * x + y * y;
       }
       while (sqnorm >= 1 || sqnorm == 0);
-      const llr_t modulus = sqrt((-2 * log(sqnorm)) / sqnorm);
+      const float modulus = sqrt((-2 * log(sqnorm)) / sqnorm);
       // {x, y} * modulus are the two produced gaussian values
       result     = x * modulus;
       g_val_next = y * modulus;
     }
     g_val_exists = !g_val_exists;
-    return result;
+    return static_cast<transfer_llr_t>(result);
   }
 };

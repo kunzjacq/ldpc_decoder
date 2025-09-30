@@ -68,6 +68,8 @@ void describe_code(
   po_description << p_code.n_inputs() << " variables" << endl;
   po_description << p_code.n_outputs() << " parity bits" << endl;
   po_description << p_code.n_erased_inputs() << " erased variables (not sent, but recovered)" << endl;
+  po_description << "maximum input bit arity: " << p_code.max_degree_in() << endl;
+  po_description << "maximum output/check bit arity: " << p_code.max_degree_out() << endl;  
   po_description << "Rate = " << rate(p_code) << endl;
   po_description << endl;
 }
@@ -76,7 +78,7 @@ void describe_channel(const noisy_channel& p_channel, ostream& po_description)
 {
   po_description << "Channel:" << endl;
   p_channel.description(po_description);
-  llr_t channelCapacity = p_channel.capacity();
+  float channelCapacity = p_channel.capacity();
   po_description << "capacity: " << channelCapacity << " bits/symbol" << endl;
   po_description << endl;
 }
@@ -123,10 +125,12 @@ void test_report::gen_summary()
               " (corresponding FER: " << double(vectors_with_errors) / double(frames_decoded) <<
               ")" << endl;
   report << endl;
-  report <<   "Mbits processed:                  "  << mbits_processed << endl;
-  report <<   "Elapsed system time:              " << elapsed_time << " sec." << endl;
-  report <<   "throughput:                       " << mbits_processed / elapsed_time <<
-              " Mbits/sec." << endl;
+  report <<   "Mbits processed:                  "                << mbits_processed << endl;
+  report <<   "Elapsed system time:              "                << elapsed_time << " sec." << endl;
+  report <<   "Throughput including transfers and finish: "       << mbits_processed / elapsed_time << " Mbits/sec." << endl;
+  report <<   "Max/min/average number of iterations per vector: " << max_iter << "/" << min_iter << "/" << avg_iter << endl;
+  report <<   "Iteration time per vector (i.e. iteration time / vector batch size): " << iter_time_per_vector << " sec" << endl;
+  report <<   "Decoding throughput: " <<  frame_size / (avg_iter * iter_time_per_vector * 1048576.) << " Mbits/sec." << endl;
   report << endl;
 }
 

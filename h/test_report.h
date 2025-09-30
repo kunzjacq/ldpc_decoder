@@ -17,7 +17,8 @@ public:
   uint32_t num_vectors_per_run;
   double ber;
   uint32_t num_runs;
-  double avg_iter;
+  float avg_iter;
+  float iter_time_per_vector;
   uint32_t min_iter;
   uint32_t max_iter;
   uint32_t frame_size;

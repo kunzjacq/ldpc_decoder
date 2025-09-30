@@ -26,14 +26,14 @@ public:
     m_num_words_per_bit((num_vec + bool_t_bit_size - 1) / bool_t_bit_size),
     m_num_vec(num_vec),
     m_vec_bit_sz(vec_bit_sz),
-    m_ref((bool_t*) aligned_alloc(32, m_num_words_per_bit*vec_bit_sz*sizeof(bool_t)))
+    m_ref((bool_t*) util::aligned_alloc(32, m_num_words_per_bit*vec_bit_sz*sizeof(bool_t)))
   {
     if(erase) memset(m_ref, 0, m_num_words_per_bit*vec_bit_sz*sizeof(bool_t));
   }
 
   ~bool_vec()
   {
-    aligned_free(m_ref);
+    util::aligned_free(m_ref);
   }
 
   // access with idx = vec_idx + word_sz * num_words_per_bit * bit_idx
